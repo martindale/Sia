@@ -60,6 +60,25 @@ func (g *Gateway) numOutboundPeers() (numOutboundPeers int) {
 	return numOutboundPeers
 }
 
+// randomPotentialPeer returns a random node from the gateway. Unlike
+// randomNode, it is not truly random because it prioritizes some nodes over
+// others. An error can be returned if there are no nodes in the node list.
+func (g *Gateway) randomPotentialPeer() (modules.NetAddress, error) {
+	if len(g.nodes) == 0 {
+		return "", errNoPeers
+	}
+
+	// Try three times to select a prioritized node.
+	for i := 0; i < 3; i++ {
+		addr, _ := g.randomNode()
+		if g.nodes[addr].Prioritize {
+			return addr, nil
+		}
+	}
+	// Fallback to a uniformly random node.
+	return g.randomNode()
+}
+
 // permanentPeerManager tries to keep the Gateway well-connected. As long as
 // the Gateway is not well-connected, it tries to connect to random nodes.
 func (g *Gateway) permanentPeerManager(closedChan chan struct{}) {
@@ -87,7 +106,7 @@ func (g *Gateway) permanentPeerManager(closedChan chan struct{}) {
 
 		// Fetch a random node.
 		g.mu.RLock()
-		addr, err := g.randomNode()
+		addr, err := g.randomPotentialPeer()
 		g.mu.RUnlock()
 		// If there was an error, log the error and then wait a while before
 		// trying again.

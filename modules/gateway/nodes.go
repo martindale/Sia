@@ -115,7 +115,7 @@ func (g *Gateway) randomNode() (modules.NetAddress, error) {
 		}
 		r--
 	}
-	return "", errNoPeers
+	panic("unreachable")
 }
 
 // shareNodes is the receiving end of the ShareNodes RPC. It writes up to 10
